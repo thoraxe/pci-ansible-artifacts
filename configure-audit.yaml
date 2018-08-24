@@ -1,0 +1,37 @@
+- name: Configure PCI audit requirements
+  hosts: nodes
+  become: true
+  gather_facts: false
+  tasks:
+    - name: configure tty logging for su
+      pamd:
+        name: su
+        type: session
+        control: optional
+        module_path: pam_xauth.so
+        new_type: session
+        new_control: required
+        new_module_path: pam_tty_audit.so
+        module_arguments: 'disable=* enable=root'
+        state: after
+    - name: configure tty logging for sudo
+      pamd:
+        name: sudo
+        type: session
+        control: required
+        module_path: pam_limits.so
+        new_type: session
+        new_control: required
+        new_module_path: pam_tty_audit.so
+        module_arguments: 'disable=* enable=root'
+        state: after
+    - name: deploy audit rules configuration
+      copy:
+        src: audit.rules
+        dest: /etc/audit/rules.d/audit.rules
+      register: rules_deploy_out
+    - name: restart auditd
+      command: '/usr/sbin/service auditd restart'
+      args:
+        warn: false
+      when: rules_deploy_out is changed

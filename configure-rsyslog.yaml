@@ -1,0 +1,50 @@
+# https://selivan.github.io/2017/02/07/rsyslog-log-forward-save-filename-handle-multi-line-failover.html
+- name: Configure rsyslog receiver
+  hosts: logging
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Deploy the server configuration
+      copy:
+        src: rsyslog-server.conf
+        dest: /etc/rsyslog.conf
+      register: server_config_out
+
+    - name: Restart rsyslog service
+      service:
+        name: rsyslog
+        state: restarted
+      when: server_config_out is changed
+
+    - name: Open port 514 TCP
+      firewalld:
+        port: 514/tcp
+        permanent: true
+        immediate: true
+        state: enabled
+        zone: public
+
+- name: Configure rsyslog clients (senders)
+  hosts: nodes
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Add the logging server to the rsyslog config
+      lineinfile:
+        path: /etc/rsyslog.conf
+        line: '*.* @@logging.pci.e2e.bos.redhat.com'
+        insertafter: EOF
+      register: logging_server_config_out
+
+    - name: Add the FQDN line before the rules block
+      lineinfile:
+        path: /etc/rsyslog.conf
+        line: '$PreserveFQDN on'
+        insertbefore: '#### RULES ####'
+      register: fqdn_config_out
+
+    - name: restart rsyslog service
+      service:
+        name: rsyslog
+        state: restarted
+      when: ( logging_server_config_out is changed ) or ( fqdn_config_out is changed )

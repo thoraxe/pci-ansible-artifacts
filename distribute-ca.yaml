@@ -1,0 +1,26 @@
+- name: Get CA
+  hosts: identity
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Fetch CA from identity server to local tmp
+      fetch:
+        src: /etc/ipa/ca.crt
+        dest: /tmp/ipa-ca.crt
+        flat: true
+
+- name: Distribute CA
+  hosts: masters
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Ensure /etc/origin/master directory exists
+      file:
+        path: /etc/origin/master
+        state: directory
+        mode: 0755
+
+    - name: Copy ipa-ca.crt to /etc/origin/master on host
+      copy:
+        src: /tmp/ipa-ca.crt
+        dest: /etc/origin/master/ipa-ca.crt
