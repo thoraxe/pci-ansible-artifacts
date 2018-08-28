@@ -30,8 +30,56 @@
         src: audit.rules
         dest: /etc/audit/rules.d/audit.rules
       register: rules_deploy_out
+      notify: 
+        - 'restart auditd'
+    # system should be rebooted after running this playbook
+    - name: Update grub configuration to include audit settings
+      replace: 
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX=.*$'
+        replace: 'GRUB_CMDLINE_LINUX="crashkernel=auto rd.lvm.lv=rhel/root rd.lvm.lv=rhel/swap rhgb quiet audit=1 audit_backlog_limit=8192"'
+    - name: set audit log format to enriched
+      replace:
+        path: /etc/audit/auditd.conf
+        regexp: '^log_format =.*$'
+        replace: 'log_format = enriched'
+      notify:
+        - 'restart auditd'
+    - name: set audit log name_format to hostname
+      replace:
+        path: /etc/audit/auditd.conf
+        regexp: '^name_format = .*$'
+        replace: 'name_format = hostname'
+      notify:
+        - 'restart auditd'
+    - name: activate syslog audisp plugin
+      replace:
+        path: /etc/audisp/plugins.d/syslog.conf
+        regexp: 'active = no'
+        replace: 'active = yes'
+      notify:
+        - 'restart auditd'
+    - name: change q_depth of audisp
+      replace:
+        path: /etc/audisp/audispd.conf
+        regexp: '^q_depth = .*$'
+        replace: 'q_depth = 512'
+      notify:
+        - 'restart auditd'
+    - name: change max_restarts of audisp
+      replace:
+        path: /etc/audisp/audispd.conf
+        regexp: '^max_restarts = .*$'
+        replace: 'max_restarts = 50'
+      notify:
+        - 'restart auditd'
+
+  handlers:
+    # need to use the service command here because audit can't be restarted
+    # with systemctl
     - name: restart auditd
       command: '/usr/sbin/service auditd restart'
       args:
         warn: false
-      when: rules_deploy_out is changed
+
+

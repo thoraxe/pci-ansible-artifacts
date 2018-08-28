@@ -1,0 +1,102 @@
+- name: Configure the apps and projects for the refarch
+  hosts: masters[0]
+  become: true
+  gather_facts: false
+  tasks:
+    #### CDE1
+    - name: Check for CDE1 project
+      command: oc get project cde1
+      register: cde1_exists
+      ignore_errors: true
+
+    - name: Create CDE1 project if it doesn't exist
+      command: "oc adm new-project cde1 --admin=jdoe --display-name='CDE Application 1' --node-selector='node-role.kubernetes.io/cde=true'"
+      when: cde1_exists is failed
+      
+    - name: Delete everything in the CDE1 project
+      command: "oc delete all --all -n cde1"
+
+    - name: Wait a moment
+      pause: 
+        seconds: 30
+
+    - name: Deploy app1 in CDE1 project
+      command: "oc new-app docker.io/openshiftroadshow/parksmap-py:1.0.0 --name=app1 -n cde1 -l role=scopuli"
+
+    - name: Deploy app2 in CDE1 project
+      command: "oc new-app docker.io/openshiftroadshow/parksmap-py:1.0.0 --name=app2 -n cde1"
+
+    - name: Deploy tools in CDE1 project
+      command: "oc new-app quay.io/thoraxe/centos-tools-extra:latest --name=tools -n cde1"
+
+    # CDE1 policy objects
+
+    #### CDE2
+    - name: Check for CDE2 project
+      command: oc get project cde2
+      register: cde2_exists
+      ignore_errors: true
+
+    - name: Create CDE2 project if it doesn't exist
+      command: "oc adm new-project cde2 --admin=jdoe --display-name='CDE Application 2' --node-selector='node-role.kubernetes.io/cde=true'"
+      when: cde2_exists is failed
+      
+    - name: Delete everything in the CDE2 project
+      command: "oc delete all --all -n cde2"
+
+    - name: Wait a moment
+      pause: 
+        seconds: 30
+
+    - name: Deploy app1 in CDE2 project
+      command: "oc new-app docker.io/openshiftroadshow/parksmap-py:1.0.0 --name=app1 -n cde2"
+
+    - name: Deploy tools in CDE2 project
+      command: "oc new-app quay.io/thoraxe/centos-tools-extra:latest --name=tools -n cde2"
+
+    #### Support1
+    - name: Check for Support1 project
+      command: oc get project support1
+      register: support1_exists
+      ignore_errors: true
+
+    - name: Create Support1 project if it doesn't exist
+      command: "oc adm new-project support1 --admin=jdoe --display-name='Support Application 1' --node-selector='node-role.kubernetes.io/support=true'"
+      when: support1_exists is failed
+      
+    - name: Delete everything in the Support1 project
+      command: "oc delete all --all -n support1"
+
+    - name: Wait a moment
+      pause: 
+        seconds: 30
+
+    - name: Deploy app1 in Support1 project
+      command: "oc new-app docker.io/openshiftroadshow/parksmap-py:1.0.0 --name=app1 -n support1 -l role=canterbury"
+
+    - name: Deploy tools in Support1 project
+      command: "oc new-app quay.io/thoraxe/centos-tools-extra:latest --name=tools -n support1 -l role=canterbury"
+
+    #### Other
+    - name: Check for Other project
+      command: oc get project other
+      register: other_exists
+      ignore_errors: true
+
+    - name: Create Other project if it doesn't exist
+      command: "oc adm new-project other --admin=jdoe --display-name='Other Applications'"
+      when: other_exists is failed
+      
+    - name: Delete everything in the Other project
+      command: "oc delete all --all -n other"
+
+    - name: Wait a moment
+      pause: 
+        seconds: 30
+
+    - name: Deploy app1 in Other project
+      command: "oc new-app docker.io/openshiftroadshow/parksmap-py:1.0.0 --name=app1 -n other"
+
+    - name: Deploy tools in Other project
+      command: "oc new-app quay.io/thoraxe/centos-tools-extra:latest --name=tools -n other"
+
