@@ -12,7 +12,7 @@
     - name: Create CDE1 project if it doesn't exist
       command: "oc adm new-project cde1 --admin=jdoe --display-name='CDE Application 1' --node-selector='node-role.kubernetes.io/cde=true'"
       when: cde1_exists is failed
-      
+
     - name: Delete everything in the CDE1 project
       command: "oc delete all --all -n cde1"
 
@@ -63,6 +63,9 @@
     - name: Create Support1 project if it doesn't exist
       command: "oc adm new-project support1 --admin=jdoe --display-name='Support Application 1' --node-selector='node-role.kubernetes.io/support=true'"
       when: support1_exists is failed
+      
+    - name: Label Support1 namespace
+      command: "oc label namespace support1 location=CA-2216862"
       
     - name: Delete everything in the Support1 project
       command: "oc delete all --all -n support1"
