@@ -16,16 +16,39 @@ apiVersion: networking.k8s.io/v1
 metadata:
   name: canterbury-to-scopuli
 spec:
-  # destination is scopuli
+  # destination is scopuli-labeled pods
   podSelector:
     matchLabels:
       role: scopuli
   # source is canterbury specifically in support1 (CA-2216862)
+  # in 3.10 can only allow entire namespace access
   ingress:
     - ports:
+      # destination is tcp 8080
       - protocol: TCP
         port: 8080
       from:
         - namespaceSelector:
             matchLabels:
               location: CA-2216862 
+
+---
+# expose app2 only to the router
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  # router lives in default namespace
+  name: allow-from-default-namespace
+spec:
+  podSelector:
+    matchLabels:
+      app: app2
+  ingress:
+  - ports:
+    # destination is tcp 8080
+    - protocol: TCP
+      port: 8080
+    from:
+    - namespaceSelector:
+        matchLabels:
+          name: default
