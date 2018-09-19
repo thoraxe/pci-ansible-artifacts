@@ -1,0 +1,21 @@
+- name: Configure various timeouts
+  hosts: masters
+  become: true
+  gather_facts: false
+  tasks:
+    - import_role:
+        name: '/usr/share/ansible/openshift-ansible/roles/lib_utils'
+    - name: 'Alter the oauthConfig.tokenConfig.accessTokenInactivityTimeoutSeconds to 900'
+      yedit:
+        src: "/etc/origin/master/master-config.yaml"
+        key: "oauthConfig.tokenConfig.accessTokenInactivityTimeoutSeconds"
+        value: 900
+      register: master_file_change_out
+
+    - name: 'restart master services if config file changed'
+      shell: "/usr/local/bin/master-restart {{ item }}"
+      with_items:
+        - controllers
+        - api
+      when: master_file_change_out is changed
+
